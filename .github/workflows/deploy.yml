@@ -3,7 +3,8 @@ name: Deploy to AWS
 on:
   push:
     branches:
-      - main  # Adjust to your default branch
+      - main  # Change this if your default branch is different
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -18,17 +19,13 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1  # Change to your AWS region
+          aws-region: us-east-1  # Change this if your AWS region is different
 
-      - name: SSH into EC2 and deploy
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.MY_EC2_KEY }}
-          script: |
-            cd /var/www/html  # Change to your project directory
-            git pull origin main
-            npm install  # If using Node.js
-            pm2 restart all  # Restart the application (if applicable)
-
+      - name: Deploy using SSH
+        run: |
+          ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_HOST }} << 'EOF'
+            cd /var/www/html  # Change this to your deployment directory
+            git pull origin main  # Pull latest changes
+            npm install  # Install dependencies if using Node.js
+            pm2 restart all  # Restart app if using PM2
+          EOF
